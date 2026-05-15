@@ -1,13 +1,16 @@
-// Prisma schema for Stellar Expense Splitter
-// SQLite for local dev, can swap to PostgreSQL for production
+// Prisma schema for Stellar Expense Trackit
+// PostgreSQL for production (Vercel Postgres / Neon / Supabase)
+// For local dev, set DATABASE_URL to a local Postgres or use the SQLite branch
 
 generator client {
   provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "sqlite"
-  url      = env("DATABASE_URL")
+  provider  = "postgresql"
+  url       = env("DATABASE_URL")
+  // directUrl is used by Prisma for migrations when DATABASE_URL is a pooled connection (e.g. Neon)
+  directUrl = env("DIRECT_URL")
 }
 
 model User {
@@ -19,12 +22,12 @@ model User {
   updatedAt      DateTime @updatedAt
 
   // Relations
-  ownedGroups    Group[]         @relation("GroupOwner")
-  memberships    GroupMember[]
-  paidExpenses   Expense[]       @relation("ExpensePayer")
-  expenseShares  ExpenseShare[]
-  sentPayments   Payment[]       @relation("PaymentSender")
-  receivedPayments Payment[]     @relation("PaymentReceiver")
+  ownedGroups      Group[]        @relation("GroupOwner")
+  memberships      GroupMember[]
+  paidExpenses     Expense[]      @relation("ExpensePayer")
+  expenseShares    ExpenseShare[]
+  sentPayments     Payment[]      @relation("PaymentSender")
+  receivedPayments Payment[]      @relation("PaymentReceiver")
 }
 
 model Group {
@@ -35,7 +38,6 @@ model Group {
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
   ownerId  String
   owner    User          @relation("GroupOwner", fields: [ownerId], references: [id])
   members  GroupMember[]
@@ -58,23 +60,22 @@ model Expense {
   id          String   @id @default(cuid())
   title       String
   description String?
-  amount      Float    // Total amount
+  amount      Float
   currency    String   @default("XLM")
   splitType   String   @default("EQUAL") // EQUAL | CUSTOM
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 
-  // Relations
-  groupId  String
-  group    Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
-  payerId  String
-  payer    User           @relation("ExpensePayer", fields: [payerId], references: [id])
-  shares   ExpenseShare[]
+  groupId String
+  group   Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  payerId String
+  payer   User           @relation("ExpensePayer", fields: [payerId], references: [id])
+  shares  ExpenseShare[]
 }
 
 model ExpenseShare {
-  id     String @id @default(cuid())
-  amount Float  // Amount this user owes
+  id     String  @id @default(cuid())
+  amount Float
   paid   Boolean @default(false)
 
   expenseId String
@@ -86,17 +87,17 @@ model ExpenseShare {
 }
 
 model Payment {
-  id              String   @id @default(cuid())
-  amount          Float
-  currency        String   @default("XLM")
-  status          String   @default("PENDING") // PENDING | COMPLETED | FAILED
-  stellarTxHash   String?  // Stellar transaction hash
-  memo            String?
-  createdAt       DateTime @default(now())
-  completedAt     DateTime?
+  id            String    @id @default(cuid())
+  amount        Float
+  currency      String    @default("XLM")
+  status        String    @default("PENDING") // PENDING | COMPLETED | FAILED
+  stellarTxHash String?
+  memo          String?
+  createdAt     DateTime  @default(now())
+  completedAt   DateTime?
 
-  senderId    String
-  sender      User   @relation("PaymentSender", fields: [senderId], references: [id])
-  receiverId  String
-  receiver    User   @relation("PaymentReceiver", fields: [receiverId], references: [id])
+  senderId   String
+  sender     User   @relation("PaymentSender", fields: [senderId], references: [id])
+  receiverId String
+  receiver   User   @relation("PaymentReceiver", fields: [receiverId], references: [id])
 }

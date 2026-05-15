@@ -62,6 +62,7 @@ npm install
 
 # 3. Set up environment variables
 cp .env.example .env
+# Edit .env and add your DATABASE_URL (see below)
 
 # 4. Set up the database
 npm run db:generate
@@ -76,6 +77,8 @@ npm run dev
 
 Open [http://localhost:3000](http://localhost:3000) and log in with username `alice` (from seed data).
 
+> **Database:** The project uses PostgreSQL. For local dev, get a free database from [Neon](https://neon.tech) (takes 30 seconds) and paste the connection string into your `.env` as `DATABASE_URL` and `DIRECT_URL`.
+
 ---
 
 ## 🔑 Environment Variables
@@ -84,7 +87,8 @@ Copy `.env.example` to `.env` and fill in:
 
 | Variable | Description | Default |
 |----------|-------------|---------|
-| `DATABASE_URL` | SQLite path (or Postgres URL for prod) | `file:./dev.db` |
+| `DATABASE_URL` | PostgreSQL connection string (pooled) | — |
+| `DIRECT_URL` | PostgreSQL direct connection (for migrations) | same as above if not pooled |
 | `NEXT_PUBLIC_STELLAR_NETWORK` | `testnet` or `mainnet` | `testnet` |
 | `NEXT_PUBLIC_HORIZON_URL` | Stellar Horizon server | testnet URL |
 | `NEXT_PUBLIC_USDC_ISSUER` | USDC asset issuer address | testnet issuer |
