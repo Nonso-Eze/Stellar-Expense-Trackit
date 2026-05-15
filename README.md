@@ -2,6 +2,7 @@
 
 > Split bills with friends. Settle instantly on the Stellar blockchain.
 
+[![CI](https://github.com/Nonso-Eze/Stellar-Expense-Trackit/actions/workflows/ci.yml/badge.svg)](https://github.com/Nonso-Eze/Stellar-Expense-Trackit/actions/workflows/ci.yml)
 [![License: MIT](https://img.shields.io/badge/License-MIT-violet.svg)](https://opensource.org/licenses/MIT)
 [![PRs Welcome](https://img.shields.io/badge/PRs-welcome-brightgreen.svg)](CONTRIBUTING.md)
 [![Built with Next.js](https://img.shields.io/badge/Built%20with-Next.js%2015-black)](https://nextjs.org)
@@ -119,6 +120,21 @@ datasource db {
 ```
 
 Then run `npx prisma db push` against your production DB URL.
+
+### CI/CD (GitHub Actions)
+
+The repo ships with two workflows:
+
+- **CI** — runs on every push and PR: lint → type check → build
+- **Deploy** — auto-deploys to Vercel on merge to `main`, posts a preview URL comment on PRs
+
+To enable the deploy workflow, add these secrets in your GitHub repo settings (`Settings → Secrets → Actions`):
+
+| Secret | Where to get it |
+|--------|----------------|
+| `VERCEL_TOKEN` | [vercel.com/account/tokens](https://vercel.com/account/tokens) |
+| `VERCEL_ORG_ID` | Run `vercel link` locally, then check `.vercel/project.json` |
+| `VERCEL_PROJECT_ID` | Same as above |
 
 ---
 
