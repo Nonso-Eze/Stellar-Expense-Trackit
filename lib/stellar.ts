@@ -1,4 +1,6 @@
 // Stellar SDK helpers for payment operations
+// This file is SERVER-ONLY — never import it in client components
+import "server-only";
 import {
   Horizon,
   Networks,
