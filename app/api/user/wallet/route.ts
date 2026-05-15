@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
+export const dynamic = "force-dynamic";
+
 // PATCH /api/user/wallet — update the user's Stellar wallet address
 export async function PATCH(req: NextRequest) {
   const user = await getCurrentUser();

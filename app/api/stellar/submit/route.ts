@@ -2,6 +2,8 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { submitTransaction } from "@/lib/stellar";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/stellar/submit — submit a signed transaction to the Stellar network
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();

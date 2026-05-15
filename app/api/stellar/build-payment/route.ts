@@ -3,6 +3,8 @@ import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 import { buildXLMPaymentTx, buildUSDCPaymentTx } from "@/lib/stellar";
 
+export const dynamic = "force-dynamic";
+
 // POST /api/stellar/build-payment — build an unsigned payment transaction
 export async function POST(req: NextRequest) {
   const user = await getCurrentUser();
