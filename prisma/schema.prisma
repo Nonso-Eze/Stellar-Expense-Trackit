@@ -1,0 +1,102 @@
+// Prisma schema for Stellar Expense Splitter
+// SQLite for local dev, can swap to PostgreSQL for production
+
+generator client {
+  provider = "prisma-client-js"
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id             String   @id @default(cuid())
+  username       String   @unique
+  displayName    String
+  stellarAddress String?  // Freighter wallet public key
+  createdAt      DateTime @default(now())
+  updatedAt      DateTime @updatedAt
+
+  // Relations
+  ownedGroups    Group[]         @relation("GroupOwner")
+  memberships    GroupMember[]
+  paidExpenses   Expense[]       @relation("ExpensePayer")
+  expenseShares  ExpenseShare[]
+  sentPayments   Payment[]       @relation("PaymentSender")
+  receivedPayments Payment[]     @relation("PaymentReceiver")
+}
+
+model Group {
+  id          String   @id @default(cuid())
+  name        String
+  description String?
+  currency    String   @default("XLM") // XLM or USDC
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  ownerId  String
+  owner    User          @relation("GroupOwner", fields: [ownerId], references: [id])
+  members  GroupMember[]
+  expenses Expense[]
+}
+
+model GroupMember {
+  id       String   @id @default(cuid())
+  joinedAt DateTime @default(now())
+
+  groupId String
+  group   Group  @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  userId  String
+  user    User   @relation(fields: [userId], references: [id])
+
+  @@unique([groupId, userId])
+}
+
+model Expense {
+  id          String   @id @default(cuid())
+  title       String
+  description String?
+  amount      Float    // Total amount
+  currency    String   @default("XLM")
+  splitType   String   @default("EQUAL") // EQUAL | CUSTOM
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  // Relations
+  groupId  String
+  group    Group          @relation(fields: [groupId], references: [id], onDelete: Cascade)
+  payerId  String
+  payer    User           @relation("ExpensePayer", fields: [payerId], references: [id])
+  shares   ExpenseShare[]
+}
+
+model ExpenseShare {
+  id     String @id @default(cuid())
+  amount Float  // Amount this user owes
+  paid   Boolean @default(false)
+
+  expenseId String
+  expense   Expense @relation(fields: [expenseId], references: [id], onDelete: Cascade)
+  userId    String
+  user      User    @relation(fields: [userId], references: [id])
+
+  @@unique([expenseId, userId])
+}
+
+model Payment {
+  id              String   @id @default(cuid())
+  amount          Float
+  currency        String   @default("XLM")
+  status          String   @default("PENDING") // PENDING | COMPLETED | FAILED
+  stellarTxHash   String?  // Stellar transaction hash
+  memo            String?
+  createdAt       DateTime @default(now())
+  completedAt     DateTime?
+
+  senderId    String
+  sender      User   @relation("PaymentSender", fields: [senderId], references: [id])
+  receiverId  String
+  receiver    User   @relation("PaymentReceiver", fields: [receiverId], references: [id])
+}
