@@ -1,34 +1,38 @@
-// Stellar SDK helpers for payment operations
-// This file is SERVER-ONLY — never import it in client components
+// Stellar SDK helpers — SERVER ONLY
+// All SDK imports are lazy (inside functions) to prevent Vercel build-time crashes
+// caused by sodium-native's native addon being evaluated during static analysis.
+
 import "server-only";
-import {
-  Horizon,
-  Networks,
-  TransactionBuilder,
-  Operation,
-  Asset,
-  Memo,
-  BASE_FEE,
-} from "@stellar/stellar-sdk";
 
 const NETWORK = process.env.NEXT_PUBLIC_STELLAR_NETWORK ?? "testnet";
 const HORIZON_URL =
   process.env.NEXT_PUBLIC_HORIZON_URL ?? "https://horizon-testnet.stellar.org";
 
-export const server = new Horizon.Server(HORIZON_URL);
-export const networkPassphrase =
-  NETWORK === "mainnet" ? Networks.PUBLIC : Networks.TESTNET;
+/** Get a configured Horizon server instance */
+async function getServer() {
+  const { Horizon } = await import("@stellar/stellar-sdk");
+  return new Horizon.Server(HORIZON_URL);
+}
 
-/** USDC asset on testnet/mainnet */
-export const USDC = new Asset(
-  "USDC",
-  process.env.NEXT_PUBLIC_USDC_ISSUER ??
-    "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
-);
+/** Get the network passphrase */
+async function getNetworkPassphrase() {
+  const { Networks } = await import("@stellar/stellar-sdk");
+  return NETWORK === "mainnet" ? Networks.PUBLIC : Networks.TESTNET;
+}
+
+/** USDC asset */
+async function getUSDC() {
+  const { Asset } = await import("@stellar/stellar-sdk");
+  return new Asset(
+    "USDC",
+    process.env.NEXT_PUBLIC_USDC_ISSUER ??
+      "GBBD47IF6LWK7P7MDEVSCWR7DPUWV3NY3DTQEVFL4NAT4AQH3ZLLFLA5"
+  );
+}
 
 /**
- * Build an XLM payment transaction (unsigned).
- * The Freighter wallet will sign it client-side.
+ * Build an unsigned XLM payment transaction.
+ * Returns the XDR string for Freighter to sign.
  */
 export async function buildXLMPaymentTx(
   senderAddress: string,
@@ -36,12 +40,13 @@ export async function buildXLMPaymentTx(
   amount: string,
   memo?: string
 ): Promise<string> {
+  const { TransactionBuilder, Operation, Asset, Memo, BASE_FEE } =
+    await import("@stellar/stellar-sdk");
+  const server = await getServer();
+  const networkPassphrase = await getNetworkPassphrase();
   const account = await server.loadAccount(senderAddress);
 
-  const tx = new TransactionBuilder(account, {
-    fee: BASE_FEE,
-    networkPassphrase,
-  })
+  const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase })
     .addOperation(
       Operation.payment({
         destination: receiverAddress,
@@ -57,7 +62,7 @@ export async function buildXLMPaymentTx(
 }
 
 /**
- * Build a USDC payment transaction (unsigned).
+ * Build an unsigned USDC payment transaction.
  */
 export async function buildUSDCPaymentTx(
   senderAddress: string,
@@ -65,16 +70,18 @@ export async function buildUSDCPaymentTx(
   amount: string,
   memo?: string
 ): Promise<string> {
+  const { TransactionBuilder, Operation, Memo, BASE_FEE } =
+    await import("@stellar/stellar-sdk");
+  const server = await getServer();
+  const networkPassphrase = await getNetworkPassphrase();
+  const usdc = await getUSDC();
   const account = await server.loadAccount(senderAddress);
 
-  const tx = new TransactionBuilder(account, {
-    fee: BASE_FEE,
-    networkPassphrase,
-  })
+  const tx = new TransactionBuilder(account, { fee: BASE_FEE, networkPassphrase })
     .addOperation(
       Operation.payment({
         destination: receiverAddress,
-        asset: USDC,
+        asset: usdc,
         amount,
       })
     )
@@ -86,23 +93,26 @@ export async function buildUSDCPaymentTx(
 }
 
 /**
- * Submit a signed XDR transaction to the Stellar network.
- * Returns the transaction hash on success.
+ * Submit a signed XDR transaction to Stellar.
+ * Returns the transaction hash.
  */
 export async function submitTransaction(signedXDR: string): Promise<string> {
   const { TransactionBuilder } = await import("@stellar/stellar-sdk");
+  const server = await getServer();
+  const networkPassphrase = await getNetworkPassphrase();
   const tx = TransactionBuilder.fromXDR(signedXDR, networkPassphrase);
   const result = await server.submitTransaction(tx);
   return result.hash;
 }
 
 /**
- * Fetch the XLM and USDC balances for a Stellar account.
+ * Fetch XLM and USDC balances for a Stellar account.
  */
 export async function getAccountBalances(
   address: string
 ): Promise<{ xlm: string; usdc: string }> {
   try {
+    const server = await getServer();
     const account = await server.loadAccount(address);
     let xlm = "0";
     let usdc = "0";
@@ -125,10 +135,11 @@ export async function getAccountBalances(
 }
 
 /**
- * Check if an account exists on the Stellar network.
+ * Check if a Stellar account exists on the network.
  */
 export async function accountExists(address: string): Promise<boolean> {
   try {
+    const server = await getServer();
     await server.loadAccount(address);
     return true;
   } catch {
