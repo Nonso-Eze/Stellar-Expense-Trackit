@@ -2,7 +2,9 @@ import { NextRequest, NextResponse } from "next/server";
 import { getCurrentUser } from "@/lib/auth";
 import { prisma } from "@/lib/db";
 
-export const dynamic = "force-dynamic"; — get a single group with all details
+export const dynamic = "force-dynamic";
+
+// GET /api/groups/[id] — get a single group with all details
 export async function GET(
   _req: NextRequest,
   { params }: { params: Promise<{ id: string }> }
